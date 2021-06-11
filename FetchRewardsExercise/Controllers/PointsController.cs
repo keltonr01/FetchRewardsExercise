@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace FetchRewardsExercise.Controllers
 {
@@ -19,24 +21,28 @@ namespace FetchRewardsExercise.Controllers
             _transactionRepository = transactionRepository;
         }
 
+        /// <summary>
+        /// Spend the user's points balance.
+        /// </summary>
+        /// <param name="points"></param>
+        /// <returns>A breakdown by <c>Payer</c> of how the points were spent.</returns>
+        /// <response code="200">Returns breakdown of how points were spent.</response>
+        /// <response code="400">If the user does not have enough points to spend.</response>
+        /// <response code="500">If there is an inconsistency with the transactions or some other intenal error.</response>
         [HttpPost]
         [Consumes("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public IActionResult SpendPoints(Points points)
-        {
-
-            //string body = string.Empty;
-            //// Read the request body.
-            //using (var reader = new StreamReader(Request.Body))
-            //{
-            //    body = reader.ReadToEnd();
-            //}
-            //
-            //// Parse the points value to an int.
-            //JObject bodyJson = JObject.Parse(body);
-            //var pointsToken = bodyJson["points"];
-            //int points = pointsToken.ToObject<int>();
-
+        {           
             var pointsValue = points.Value;
+
+            var totalSum = _transactionRepository.GetTransactions().Sum(x => x.Points);
+            if (totalSum < pointsValue)
+            {
+                return BadRequest("User does not have enough points.");
+            }
 
             // Get the transactions in ordery by date and time.
             var transactions = _transactionRepository.GetTransactions().OrderBy(x => x.Timestamp).ToList();
@@ -58,7 +64,6 @@ namespace FetchRewardsExercise.Controllers
             var positiveTransactions = effectiveTransactions.OrderBy(x => x.Timestamp).Where(t => t.Points > 0).ToList();
             var negativeTransactions = effectiveTransactions.OrderBy(x => x.Timestamp).Where(t => t.Points < 0).ToList();
             // Get all the payers.
-            //var payers = _payerRepository.GetPayers().Where(p => transactions.Any(t => p.Name == t.Payer));
 
             // Get each payer and the available points to spend.
             var payers = positiveTransactions.GroupBy(t => t.Payer).Select(p =>
@@ -113,12 +118,12 @@ namespace FetchRewardsExercise.Controllers
                     }
                     else
                     {
-                        
+                        // If the current positive transaction is not enough to cover the negative amount (remainder), we will nedd keep "spending" 
+                        // positive transactions until it is covered.
                         while (oldestPositivePayerTransaction.Current.Points - remainder <= 0)
                         {
-                            remainder -= oldestPositivePayerTransaction.Current.Points;
-                            effectiveTransactions.Remove(oldestPositivePayerTransaction.Current);
-                            //effectiveTransactions.Remove(oldestNegativeTransaction.Current);
+                            remainder -= oldestPositivePayerTransaction.Current.Points; // Subtract out the positive amount to get what is still needed.
+                            effectiveTransactions.Remove(oldestPositivePayerTransaction.Current); // Remove the spent transaction.
                             oldestPositivePayerTransaction.MoveNext();
 
                             // Sanity check to make sure we aren't pulling points from transactions that were added after the negative transaction occurred.
@@ -129,7 +134,7 @@ namespace FetchRewardsExercise.Controllers
                             }
                         }
 
-                        oldestPositivePayerTransaction.Current.Points = remainder;
+                        oldestPositivePayerTransaction.Current.Points = remainder; // How much remains in the last needed positive transaction.
                     }
 
                     // Remove current negative transaction from list as it is no longer needed.
@@ -146,7 +151,8 @@ namespace FetchRewardsExercise.Controllers
 
             foreach (var transaction in effectiveTransactions)
             {
-                pointsValue -= transaction.Points;
+                pointsValue -= transaction.Points; // Similar to before, keep "spending" points.
+
                 if (pointsValue >= 0)
                 {
                     newTransactions.Add(new Transaction
@@ -188,11 +194,12 @@ namespace FetchRewardsExercise.Controllers
         }
 
         /// <summary>
-        /// 
+        /// Get the balance for each payer.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The balances for each payer.</returns>
+        /// <response code="200">The bbalances for each payer.</response>
         [HttpGet]       
-        public IActionResult GetBalance()
+        public ActionResult<Dictionary<string, int>> GetBalance()
         {
             var payerBalances = new Dictionary<string, int>();
 
@@ -210,19 +217,20 @@ namespace FetchRewardsExercise.Controllers
 
             return Ok(payerBalances);
         }
-        
+    }
 
-        /// <summary>
-        /// Small class for returning required paramaters when spending points.
-        /// </summary>
-        private class PointsReturn
-        {
-            public string Payer { get; set; }
+    public class PointsReturn
+    {
+        [JsonPropertyName("payer")]
+        public string Payer { get; set; }
 
-            public int Points { get; set; }
-        }
+        [JsonPropertyName("points")]
+        public int Points { get; set; }
+    }
 
-
-
+    public class Points
+    {
+        [JsonPropertyName("points")]
+        public int Value { get; set; }
     }
 }

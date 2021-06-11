@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FetchRewardsExercise</name>
+    </assembly>
+    <members>
+        <member name="M:FetchRewardsExercise.Controllers.PointsController.SpendPoints(FetchRewardsExercise.Controllers.Points)">
+            <summary>
+            Spend the user's points balance.
+            </summary>
+            <param name="points"></param>
+            <returns>A breakdown by <c>Payer</c> of how the points were spent.</returns>
+            <response code="200">Returns breakdown of how points were spent.</response>
+            <response code="400">If the user does not have enough points to spend.</response>
+            <response code="500">If there is an inconsistency with the transactions or some other intenal error.</response>
+        </member>
+        <member name="M:FetchRewardsExercise.Controllers.PointsController.GetBalance">
+            <summary>
+            Get the balance for each payer.
+            </summary>
+            <returns>The balances for each payer.</returns>
+            <response code="200">The bbalances for each payer.</response>
+        </member>
+        <member name="M:FetchRewardsExercise.Controllers.TransactionsController.GetTransactions">
+            <summary>
+            Get all the transactions.
+            </summary>
+            <returns>A list of all transaction records.</returns>
+        </member>
+        <member name="M:FetchRewardsExercise.Controllers.TransactionsController.AddTransaction(FetchRewardsExercise.Models.Transaction)">
+            <summary>
+            Add a transaction to the records.
+            </summary>
+            <param name="transaction">A transaction to be added.</param>
+            <returns></returns>
+            <response code="200">If the transaction was added successfully.</response>
+            <response code="400">If the transaction was unable to be added.</response>
+        </member>
+    </members>
+</doc>

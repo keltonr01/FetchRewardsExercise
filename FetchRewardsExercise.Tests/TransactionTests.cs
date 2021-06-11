@@ -25,13 +25,12 @@ namespace FetchRewardsExercise.Tests
                 Timestamp = DateTime.Parse("2020-11-02T14:00:00Z")
             };
 
-            var testPayer = new Payer
-            {
-                Name = "DANNON",
-                Points = 0
-            };
+            var transactions = TestHelpers.GetTestTransactions();
 
             var transactionRepo = new Mock<ITransactionRepository>();
+
+            transactionRepo.Setup(repo => repo.GetTransactions())
+             .Returns(transactions);
 
             transactionRepo.Setup(repo => repo.AddTransaction(It.IsAny<Transaction>()))
                 .Verifiable();
@@ -49,17 +48,16 @@ namespace FetchRewardsExercise.Tests
             var testTransaction = new Transaction
             {
                 Payer = "DANNON",
-                Points = -500,
+                Points = -5000,
                 Timestamp = DateTime.Parse("2020-11-02T14:00:00Z")
             };
 
-            var testPayer = new Payer
-            {
-                Name = "DANNON",
-                Points = 0
-            };
+            var transactions = TestHelpers.GetTestTransactions();
 
             var transactionRepo = new Mock<ITransactionRepository>();
+
+            transactionRepo.Setup(repo => repo.GetTransactions())
+             .Returns(transactions);
 
             transactionRepo.Setup(repo => repo.AddTransaction(It.IsAny<Transaction>()))
                 .Verifiable();
@@ -73,22 +71,21 @@ namespace FetchRewardsExercise.Tests
         }
 
         [Fact]
-        public void AddTransaction_ReturnsBadRequest_PayerDoesNotExist()
+        public void AddTransactionNegative_ReturnsBadRequest_PayerDoesNotExist()
         {
             var testTransaction = new Transaction
             {
-                Payer = "UNILEVER",
-                Points = 1000,
+                Payer = "Test",
+                Points = -1000,
                 Timestamp = DateTime.Parse("2020-11-02T14:00:00Z")
             };
 
-            var testPayer = new Payer
-            {
-                Name = "DANNON",
-                Points = 0
-            };
+            var transactions = TestHelpers.GetTestTransactions();
 
             var transactionRepo = new Mock<ITransactionRepository>();
+
+            transactionRepo.Setup(repo => repo.GetTransactions())
+             .Returns(transactions);
 
             transactionRepo.Setup(repo => repo.AddTransaction(It.IsAny<Transaction>()))
                 .Verifiable();
@@ -98,7 +95,7 @@ namespace FetchRewardsExercise.Tests
             var result = controller.AddTransaction(testTransaction);
 
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Equal("Payer does not exist.", badRequestResult.Value);
+            Assert.Equal("Action would result in negative point value for payer.", badRequestResult.Value);
         }
 
         

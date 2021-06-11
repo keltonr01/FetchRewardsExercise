@@ -22,16 +22,29 @@ namespace FetchRewardsExercise.Controllers
             _transactionRepository = transactionRepository;
         }
 
+        /// <summary>
+        /// Get all the transactions.
+        /// </summary>
+        /// <returns>A list of all transaction records.</returns>
         [HttpGet]
-        public IActionResult GetTransactions()
+        public ActionResult<List<Transaction>> GetTransactions()
         {
             JsonSerializer serializer = new JsonSerializer();
             string result = JsonConvert.SerializeObject(_transactionRepository.GetTransactions());
-            return Ok(result);      
+            return Ok(result);
         }
 
+        /// <summary>
+        /// Add a transaction to the records.
+        /// </summary>
+        /// <param name="transaction">A transaction to be added.</param>
+        /// <returns></returns>
+        /// <response code="200">If the transaction was added successfully.</response>
+        /// <response code="400">If the transaction was unable to be added.</response>
         [HttpPost]
         [Consumes("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public IActionResult AddTransaction(Transaction transaction)
         {         
             // Get the total points available for the payer in the transaction.

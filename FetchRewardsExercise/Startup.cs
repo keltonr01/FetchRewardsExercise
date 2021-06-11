@@ -8,6 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.IO;
+using System.Reflection;
+using Microsoft.OpenApi.Models;
+using FetchRewardsExercise.Models;
 
 namespace FetchRewardsExercise
 {
@@ -20,21 +24,48 @@ namespace FetchRewardsExercise
             services.AddControllers();
 
             services.AddScoped<ITransactionRepository, TransactionRepository>();
+
+            services.AddMvcCore()
+                .AddApiExplorer()
+                .ConfigureApiBehaviorOptions(options =>
+                {
+                    options.SuppressMapClientErrors = true;
+                });
+
+            services.AddSwaggerGen(s =>
+            {
+                s.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Version = "v1",
+                    Title = "FR API"
+                });
+
+                var xmlCommentPath = Path.Combine(AppContext.BaseDirectory, $"{Assembly.GetExecutingAssembly().GetName().Name}.xml");
+                s.IncludeXmlComments(xmlCommentPath);
+            });
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseSwagger();
+
+            app.UseSwaggerUI(s =>
+            {
+                s.SwaggerEndpoint("/swagger/v1/swagger.json", "FR API v1");
+            });
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
 
             app.UseRouting();
-          
+
             app.UseEndpoints(endpoints =>
-            {              
-                endpoints.MapControllers();           
+            {
+                endpoints.MapControllers();
             });
         }
     }
