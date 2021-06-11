@@ -3,11 +3,7 @@ using FetchRewardsExercise.Models;
 using FetchRewardsExercise.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -21,7 +17,7 @@ namespace FetchRewardsExercise.Tests
         {
             output = testOutputHelper;
         }
-         
+
         [Fact]
         public void SpendPoints_ReturnsOk()
         {
@@ -36,8 +32,46 @@ namespace FetchRewardsExercise.Tests
             var controller = new PointsController(transactionRepo.Object);
 
             var result = controller.SpendPoints(pointsToSpend);
-            
+
             var resultObj = Assert.IsType<OkObjectResult>(result);
+        }
+
+        [Fact]
+        public void GetPointsBalance_ReturnsOk_AfterSpendPoints()
+        {
+            var pointsToSpend = new Points { Value = 5000 };
+
+            var transactionRepo = new Mock<ITransactionRepository>();
+
+            var transactions = TestHelpers.GetTestTransactions();
+
+            transactionRepo.Setup(repo => repo.AddTransaction(It.IsAny<Transaction>()))
+                .Callback((Transaction transaction) => transactions.Add(transaction));
+
+            transactionRepo.Setup(repo => repo.AddRange(It.IsAny<IEnumerable<Transaction>>()))
+                .Callback((IEnumerable<Transaction> transactionsToAdd) => transactions.AddRange(transactionsToAdd));
+
+            transactionRepo.Setup(repo => repo.GetTransactions())
+                .Returns(transactions);
+
+            var expectedPayerBalances = new Dictionary<string, int>()
+            {
+                { "DANNON", 1000 },
+                { "UNILEVER", 0 },
+                { "MILLER COORS", 5300 }
+            };
+
+            var controller = new PointsController(transactionRepo.Object);
+
+            controller.SpendPoints(pointsToSpend);
+
+            var result = controller.GetBalance();
+
+            var resultObj = Assert.IsType<OkObjectResult>(result);
+
+            Assert.Equal(expectedPayerBalances, (Dictionary<string, int>)resultObj.Value);
+
+
         }
     }
 }

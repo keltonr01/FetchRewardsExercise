@@ -9,13 +9,13 @@ namespace FetchRewardsExercise.Repositories
     public class TransactionRepository : ITransactionRepository
     {
         // Make static to keep alive
-        private static List<Transaction> transactions;
+        private static List<Transaction> _transactions;
 
         public TransactionRepository()
         {
-            if (transactions == null)
+            if (_transactions == null)
             {
-                transactions = new List<Transaction>()
+                _transactions = new List<Transaction>()
                 {
                     new Transaction
                     {
@@ -51,18 +51,20 @@ namespace FetchRewardsExercise.Repositories
             }
         }
 
+        public void AddRange(IEnumerable<Transaction> transactions)
+        {
+            _transactions.AddRange(transactions);
+        }
+
         public void AddTransaction(Transaction transaction)
         {
-            transactions.Add(transaction);
+            _transactions.Add(transaction);
         }
 
         public List<Transaction> GetTransactions()
         {
-            return transactions;
+            return _transactions;
         }
-
-
-
 
     }
 }

@@ -38,9 +38,23 @@ namespace FetchRewardsExercise.Controllers
 
             var pointsValue = points.Value;
 
-            // Get the transactions in ordery by date and time (as a copy). This will become an "effective" list. 
+            // Get the transactions in ordery by date and time.
+            var transactions = _transactionRepository.GetTransactions().OrderBy(x => x.Timestamp).ToList();
+
+            // This will become an "effective" list. 
             // i.e. will only have positive transactions, after subtracting out negative transactions.
-            var effectiveTransactions = _transactionRepository.GetTransactions().OrderBy(x => x.Timestamp).ToList();
+            var effectiveTransactions = new List<Transaction>();
+            // Deep copy of the list. Probably a better way to do this. ICloneable? Will investigate if time permits.
+            foreach (var transaction in transactions)
+            {
+                effectiveTransactions.Add(new Transaction
+                {
+                    Payer = transaction.Payer,
+                    Points = transaction.Points,
+                    Timestamp = transaction.Timestamp
+                });
+            }
+
             var positiveTransactions = effectiveTransactions.OrderBy(x => x.Timestamp).Where(t => t.Points > 0).ToList();
             var negativeTransactions = effectiveTransactions.OrderBy(x => x.Timestamp).Where(t => t.Points < 0).ToList();
             // Get all the payers.
@@ -99,7 +113,7 @@ namespace FetchRewardsExercise.Controllers
                     }
                     else
                     {
-                        //
+                        
                         while (oldestPositivePayerTransaction.Current.Points - remainder <= 0)
                         {
                             remainder -= oldestPositivePayerTransaction.Current.Points;
@@ -166,12 +180,18 @@ namespace FetchRewardsExercise.Controllers
                 {
                     break;
                 }
-            }       
+            }
+
+            _transactionRepository.AddRange(newTransactions);
 
             return Ok(pointsReturns);
         }
 
-        [HttpGet]
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]       
         public IActionResult GetBalance()
         {
             var payerBalances = new Dictionary<string, int>();
@@ -183,7 +203,12 @@ namespace FetchRewardsExercise.Controllers
                     Points = p.Sum(t => t.Points) // Sum the points of all transactions for this payer.
                 }).ToList();
 
-            return Ok();
+            foreach (var payer in payers)
+            {
+                payerBalances.Add(payer.Name, payer.Points);
+            }
+
+            return Ok(payerBalances);
         }
         
 
